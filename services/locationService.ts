@@ -55,7 +55,6 @@ export async function getCurrentLocation(): Promise<LocationType | null> {
         return {
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
-            address,
         };
     } catch (error) {
         console.error('Error getting location:', error);

@@ -1,0 +1,105 @@
+EVALUACIÓN 3 - APLICACIÓN MÓVIL TODO LIST CON BACKEND
+Instituto Profesional San Sebastián
+
+========================================
+INFORMACIÓN DE ENTREGA
+========================================
+
+Nombres del Grupo:
+- José Antonio Jara Canales
+- Raúl Veloso Ortiz
+- Adolfo Campos Gómez
+
+Repositorio: https://github.com/jjaracanales/Desarrollo_aplicaciones_moviles_evaluacion2
+
+Fecha de Entrega: 21 de Diciembre de 2025
+
+========================================
+FUNCIONALIDADES IMPLEMENTADAS
+========================================
+
+✅ Autenticación contra backend (login/registro)
+✅ Persistencia de token en AsyncStorage
+✅ Rutas protegidas con verificación de autenticación
+✅ CRUD completo de tareas 100% en backend
+✅ Envío de imágenes en base64 al servidor
+✅ Variables de entorno (.env configurado)
+✅ Manejo de errores HTTP (401, 400, 500)
+✅ Tareas asociadas al usuario mediante token JWT
+✅ Geolocalización con coordenadas enviadas al backend
+✅ Pull-to-refresh para sincronización con servidor
+
+========================================
+BACKEND API
+========================================
+
+URL Base: https://todo-list.dobleb.cl
+
+Endpoints implementados:
+- POST /auth/login - Iniciar sesión
+- POST /auth/register - Registrar usuario
+- GET /todos - Listar tareas del usuario
+- POST /todos - Crear tarea
+- PATCH /todos/:id - Actualizar tarea
+- DELETE /todos/:id - Eliminar tarea
+- POST /images - Subir imagen (multipart/form-data)
+
+========================================
+TECNOLOGÍAS UTILIZADAS
+========================================
+
+- React Native con Expo
+- TypeScript
+- Expo Router (navegación)
+- AsyncStorage (persistencia de token)
+- Expo Image Picker (fotos)
+- Expo Location (GPS)
+- Expo File System (conversión base64)
+- API REST con JWT Authentication
+
+========================================
+USO DE IA
+========================================
+
+GitHub Copilot:
+- Autocomplete de código TypeScript/React Native
+- Sugerencias de patrones y mejores prácticas
+- Documentación JSDoc
+
+ChatGPT/Claude:
+- Consultas sobre integración con API REST
+- Patrones de manejo de errores HTTP
+- Implementación de envío de imágenes en base64
+- Estructura de servicios API
+- Documentación del README
+
+Todo el código fue revisado, comprendido y adaptado por el equipo.
+
+========================================
+INSTRUCCIONES DE EJECUCIÓN
+========================================
+
+1. Clonar repositorio
+2. npm install --legacy-peer-deps
+3. Verificar archivo .env (ya incluido)
+4. npm start
+5. Escanear QR con Expo Go o usar emulador
+
+========================================
+TESTING
+========================================
+
+Para probar la aplicación:
+1. Registrar un nuevo usuario (cualquier email + contraseña 4+ caracteres)
+2. O usar credenciales de prueba si existen en el backend
+3. Crear tareas con foto y ubicación
+4. Editar, completar y eliminar tareas
+5. Verificar sincronización con backend (pull-to-refresh)
+6. Cerrar sesión y verificar que se limpia el token
+
+========================================
+COMMITS DEL EQUIPO
+========================================
+
+Todos los integrantes del equipo tienen commits en el repositorio,
+demostrando colaboración activa en el desarrollo.

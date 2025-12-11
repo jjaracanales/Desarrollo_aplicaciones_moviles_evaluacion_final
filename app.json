@@ -1,13 +1,16 @@
 {
   "expo": {
-    "name": "Ev1",
-    "slug": "Ev1",
-    "version": "1.0.0",
+    "name": "TodoList Backend",
+    "slug": "todolist-backend",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "ev1",
+    "scheme": "todolist",
+    "extra": {
+      "apiUrl": "https://todo-list.dobleb.cl"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

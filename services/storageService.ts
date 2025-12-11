@@ -4,6 +4,11 @@ import { Task } from '../types/Task';
 const TASKS_KEY = '@todolist_tasks';
 
 /**
+ * DEPRECATED: Este archivo ya no se usa. Todas las tareas se manejan en el backend.
+ * Se mantiene solo para referencia.
+ */
+
+/**
  * Get all tasks for a specific user
  */
 export async function getTasks(userEmail: string): Promise<Task[]> {
@@ -12,8 +17,8 @@ export async function getTasks(userEmail: string): Promise<Task[]> {
         if (!tasksJson) return [];
 
         const allTasks: Task[] = JSON.parse(tasksJson);
-        // Filter tasks by user email
-        return allTasks.filter(task => task.userEmail === userEmail);
+        // Filter tasks by user id
+        return allTasks.filter(task => task.userId === userEmail);
     } catch (error) {
         console.error('Error getting tasks:', error);
         return [];
@@ -29,12 +34,12 @@ export async function saveTasks(tasks: Task[]): Promise<void> {
         const existingTasksJson = await AsyncStorage.getItem(TASKS_KEY);
         const existingTasks: Task[] = existingTasksJson ? JSON.parse(existingTasksJson) : [];
 
-        // Get unique user emails from new tasks
-        const newUserEmails = [...new Set(tasks.map(t => t.userEmail))];
+        // Get unique user ids from new tasks
+        const newUserIds = [...new Set(tasks.map(t => t.userId))];
 
         // Remove tasks from other users that are in the new tasks list
         const otherUsersTasks = existingTasks.filter(
-            task => !newUserEmails.includes(task.userEmail)
+            task => !newUserIds.includes(task.userId)
         );
 
         // Combine and save

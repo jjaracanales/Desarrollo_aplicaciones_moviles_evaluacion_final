@@ -12,21 +12,7 @@ interface TaskItemProps {
 
 export default function TaskItem({ task, onToggleComplete, onEdit, onDelete }: TaskItemProps) {
     const handleDelete = () => {
-        Alert.alert(
-            'Eliminar tarea',
-            '¿Estás seguro de que deseas eliminar esta tarea?',
-            [
-                {
-                    text: 'Cancelar',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Eliminar',
-                    style: 'destructive',
-                    onPress: () => onDelete(task.id),
-                },
-            ]
-        );
+        onDelete(task.id);
     };
 
     return (
@@ -45,9 +31,9 @@ export default function TaskItem({ task, onToggleComplete, onEdit, onDelete }: T
             </TouchableOpacity>
 
             {/* Photo */}
-            {task.photoUri && (
+            {task.image && (
                 <Image
-                    source={{ uri: task.photoUri }}
+                    source={{ uri: task.image }}
                     style={styles.photo}
                     resizeMode="cover"
                 />
@@ -65,17 +51,11 @@ export default function TaskItem({ task, onToggleComplete, onEdit, onDelete }: T
                     {task.title}
                 </Text>
 
-                {task.comments && (
-                    <Text style={styles.comments} numberOfLines={2}>
-                        {task.comments}
-                    </Text>
-                )}
-
-                {task.location && task.location.address && (
+                {task.location && (
                     <View style={styles.locationContainer}>
                         <MaterialIcons name="location-on" size={14} color="#60A5FA" />
                         <Text style={styles.locationText} numberOfLines={1}>
-                            {task.location.address}
+                            {`${task.location.latitude.toFixed(4)}, ${task.location.longitude.toFixed(4)}`}
                         </Text>
                     </View>
                 )}

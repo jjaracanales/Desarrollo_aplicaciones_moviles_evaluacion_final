@@ -15,26 +15,28 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { getCurrentLocation } from '../services/locationService';
-import { savePhoto, deletePhoto } from '../services/fileService';
-import { Task, Location } from '../types/Task';
+import { Task } from '../types/Task';
+import { CreateTaskPayload, UpdateTaskPayload } from '../services/apiService';
 
 interface TaskFormProps {
     visible: boolean;
     userEmail: string;
     editingTask?: Task | null; // Optional task to edit
     onClose: () => void;
-    onSave: (task: Task) => void;
+    onSave: (taskData: CreateTaskPayload | UpdateTaskPayload, taskId?: string) => void;
 }
 
 export default function TaskForm({ visible, userEmail, editingTask, onClose, onSave }: TaskFormProps) {
     const [title, setTitle] = useState('');
-    const [comments, setComments] = useState('');
-    const [photoUri, setPhotoUri] = useState<string | null>(null);
-    const [location, setLocation] = useState<Location | null>(null);
+    const [description, setDescription] = useState('');
+    const [imageUri, setImageUri] = useState<string | null>(null);
+    const [latitude, setLatitude] = useState<number | undefined>(undefined);
+    const [longitude, setLongitude] = useState<number | undefined>(undefined);
+    const [locationAddress, setLocationAddress] = useState<string>('');
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [originalPhotoUri, setOriginalPhotoUri] = useState<string | null>(null);
 
     const isEditMode = !!editingTask;
 
@@ -43,10 +45,13 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
         if (visible && editingTask) {
             // Load editing task data
             setTitle(editingTask.title);
-            setComments(editingTask.comments || '');
-            setPhotoUri(editingTask.photoUri);
-            setOriginalPhotoUri(editingTask.photoUri);
-            setLocation(editingTask.location);
+            setDescription(''); // API no tiene description
+            setImageUri(editingTask.image || null);
+            setLatitude(editingTask.location?.latitude);
+            setLongitude(editingTask.location?.longitude);
+            if (editingTask.location) {
+                setLocationAddress(`${editingTask.location.latitude.toFixed(6)}, ${editingTask.location.longitude.toFixed(6)}`);
+            }
         } else if (visible && !editingTask) {
             // Reset form for new task
             resetForm();
@@ -62,10 +67,11 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
 
     const resetForm = () => {
         setTitle('');
-        setComments('');
-        setPhotoUri(null);
-        setOriginalPhotoUri(null);
-        setLocation(null);
+        setDescription('');
+        setImageUri(null);
+        setLatitude(undefined);
+        setLongitude(undefined);
+        setLocationAddress('');
     };
 
     const handlePickImage = async () => {
@@ -85,7 +91,7 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
             });
 
             if (!result.canceled && result.assets[0]) {
-                setPhotoUri(result.assets[0].uri);
+                setImageUri(result.assets[0].uri);
             }
         } catch (error) {
             console.error('Error picking image:', error);
@@ -109,7 +115,7 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
             });
 
             if (!result.canceled && result.assets[0]) {
-                setPhotoUri(result.assets[0].uri);
+                setImageUri(result.assets[0].uri);
             }
         } catch (error) {
             console.error('Error taking photo:', error);
@@ -121,9 +127,11 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
         setIsLoadingLocation(true);
         try {
             const loc = await getCurrentLocation();
-            setLocation(loc);
             if (loc) {
-                Alert.alert('Ubicación obtenida', loc.address || 'Coordenadas capturadas');
+                setLatitude(loc.latitude);
+                setLongitude(loc.longitude);
+                setLocationAddress(`${loc.latitude.toFixed(6)}, ${loc.longitude.toFixed(6)}`);
+                Alert.alert('Ubicación obtenida', 'Coordenadas capturadas');
             } else {
                 Alert.alert('Error', 'No se pudo obtener la ubicación. Verifica los permisos.');
             }
@@ -135,6 +143,24 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
         }
     };
 
+    // Convert image to base64
+    const convertImageToBase64 = async (uri: string): Promise<string | null> => {
+        try {
+            // Si la imagen ya es de la API (https://), no la convertimos
+            if (uri.startsWith('http://') || uri.startsWith('https://')) {
+                return null;
+            }
+
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: 'base64',
+            });
+            return base64;
+        } catch (error) {
+            console.error('Error converting image to base64:', error);
+            return null;
+        }
+    };
+
     const handleSave = async () => {
         if (!title.trim()) {
             Alert.alert('Error', 'Por favor ingresa un título para la tarea');
@@ -143,64 +169,66 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
 
         setIsSaving(true);
         try {
-            let taskId: string;
-            let savedPhotoUri: string | null = photoUri;
-
-            if (isEditMode && editingTask) {
-                // Edit mode
-                taskId = editingTask.id;
-
-                // Handle photo changes
-                if (photoUri !== originalPhotoUri) {
-                    // Photo was changed
-                    if (originalPhotoUri && !photoUri) {
-                        // Photo was removed
-                        await deletePhoto(taskId);
-                        savedPhotoUri = null;
-                    } else if (photoUri && !photoUri.startsWith('file:///')) {
-                        // New photo selected (from picker, not from filesystem)
-                        if (originalPhotoUri) {
-                            await deletePhoto(taskId); // Delete old photo
-                        }
-                        savedPhotoUri = await savePhoto(photoUri, taskId);
-                    }
-                    // If photoUri starts with file:///, it's the original photo, keep it
-                }
-            } else {
-                // Create mode
-                taskId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-
-                // Save photo to file system if exists
-                if (photoUri) {
-                    savedPhotoUri = await savePhoto(photoUri, taskId);
-                }
-
-                // Get location automatically when creating task
-                let taskLocation = location;
-                if (!taskLocation) {
-                    taskLocation = await getCurrentLocation();
-                }
-                setLocation(taskLocation);
+            console.log('Starting task save...');
+            
+            // Upload image first if it's a new local image
+            let imageUrl: string | undefined = undefined;
+            if (imageUri && !imageUri.startsWith('http://') && !imageUri.startsWith('https://')) {
+                // It's a local image, we need to upload it
+                console.log('Uploading image...');
+                const { uploadImage } = await import('../services/apiService');
+                imageUrl = await uploadImage(imageUri);
+                console.log('Image uploaded:', imageUrl);
+            } else if (imageUri) {
+                // It's already an uploaded image URL
+                imageUrl = imageUri;
+                console.log('Using existing image URL:', imageUrl);
             }
 
-            const task: Task = {
-                id: taskId,
+            // Get location automatically if not set
+            let taskLocation: { latitude: number; longitude: number } | undefined = undefined;
+            
+            if (latitude !== undefined && longitude !== undefined) {
+                console.log('Using manual location:', { latitude, longitude });
+                taskLocation = { latitude, longitude };
+            } else if (!isEditMode) {
+                // Auto-capture location for new tasks
+                console.log('Auto-capturing location for new task...');
+                const loc = await getCurrentLocation();
+                console.log('Location captured:', loc);
+                if (loc) {
+                    taskLocation = { latitude: loc.latitude, longitude: loc.longitude };
+                }
+            }
+
+            const taskData: CreateTaskPayload | UpdateTaskPayload = {
                 title: title.trim(),
-                comments: comments.trim() || undefined,
-                photoUri: savedPhotoUri,
-                location: isEditMode ? location : (location || await getCurrentLocation()),
-                completed: isEditMode ? editingTask!.completed : false,
-                userEmail,
-                createdAt: isEditMode ? editingTask!.createdAt : Date.now(),
+                location: taskLocation,
+                image: imageUrl,
             };
 
-            onSave(task);
-            resetForm();
+            console.log('Task data prepared:', taskData);
+
+            if (isEditMode && editingTask) {
+                console.log('Updating existing task:', editingTask.id);
+                // If editing and photo hasn't changed, don't include it
+                if (imageUrl === editingTask.image) {
+                    delete (taskData as any).image;
+                }
+                await onSave(taskData, editingTask.id);
+            } else {
+                console.log('Creating new task...');
+                await onSave(taskData);
+            }
+
+            console.log('Task saved successfully, closing modal...');
+            // Close modal and reset form
             onClose();
-        } catch (error) {
+            resetForm();
+        } catch (error: any) {
             console.error('Error saving task:', error);
-            Alert.alert('Error', 'No se pudo guardar la tarea');
-        } finally {
+            console.error('Error stack:', error.stack);
+            Alert.alert('Error', error.message || 'No se pudo guardar la tarea');
             setIsSaving(false);
         }
     };
@@ -247,32 +275,32 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
                                 />
                             </View>
 
-                            {/* Comments/Description Input */}
+                            {/* Description Input */}
                             <View style={styles.section}>
-                                <Text style={styles.label}>Comentarios</Text>
+                                <Text style={styles.label}>Descripción</Text>
                                 <TextInput
                                     style={[styles.input, styles.textArea]}
                                     placeholder="Agrega notas o detalles adicionales..."
                                     placeholderTextColor="#94A3B8"
-                                    value={comments}
-                                    onChangeText={setComments}
+                                    value={description}
+                                    onChangeText={setDescription}
                                     maxLength={500}
                                     multiline
                                     numberOfLines={4}
                                     textAlignVertical="top"
                                 />
-                                <Text style={styles.charCount}>{comments.length}/500</Text>
+                                <Text style={styles.charCount}>{description.length}/500</Text>
                             </View>
 
                             {/* Photo Section */}
                             <View style={styles.section}>
                                 <Text style={styles.label}>Foto</Text>
-                                {photoUri ? (
+                                {imageUri ? (
                                     <View style={styles.photoPreviewContainer}>
-                                        <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+                                        <Image source={{ uri: imageUri }} style={styles.photoPreview} />
                                         <TouchableOpacity
                                             style={styles.removePhotoButton}
-                                            onPress={() => setPhotoUri(null)}
+                                            onPress={() => setImageUri(null)}
                                         >
                                             <MaterialIcons name="close" size={20} color="#fff" />
                                         </TouchableOpacity>
@@ -294,15 +322,15 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
                             {/* Location Section */}
                             <View style={styles.section}>
                                 <Text style={styles.label}>Ubicación</Text>
-                                {location ? (
+                                {(latitude !== undefined && longitude !== undefined) ? (
                                     <View style={styles.locationCard}>
                                         <MaterialIcons name="location-on" size={24} color="#10B981" />
                                         <View style={styles.locationInfo}>
                                             <Text style={styles.locationAddress} numberOfLines={2}>
-                                                {location.address || 'Ubicación capturada'}
+                                                {locationAddress || 'Ubicación capturada'}
                                             </Text>
                                             <Text style={styles.locationCoords}>
-                                                {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                                                {latitude.toFixed(6)}, {longitude.toFixed(6)}
                                             </Text>
                                         </View>
                                     </View>
@@ -434,27 +462,27 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#EFF6FF',
+        backgroundColor: '#ECFDF5',
         padding: 16,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#DBEAFE',
+        borderColor: '#D1FAE5',
     },
     photoButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1E3A8A',
+        color: '#059669',
         marginLeft: 8,
     },
     photoPreviewContainer: {
         position: 'relative',
-        alignSelf: 'flex-start',
+        width: '100%',
     },
     photoPreview: {
         width: '100%',
         height: 200,
         borderRadius: 12,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#F3F4F6',
     },
     removePhotoButton: {
         position: 'absolute',
@@ -471,25 +499,25 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#EFF6FF',
+        backgroundColor: '#ECFDF5',
         padding: 16,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#DBEAFE',
+        borderColor: '#D1FAE5',
     },
     locationButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1E3A8A',
+        color: '#059669',
         marginLeft: 8,
     },
     locationCard: {
         flexDirection: 'row',
-        backgroundColor: '#EFF6FF',
+        backgroundColor: '#ECFDF5',
         padding: 16,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#DBEAFE',
+        borderColor: '#D1FAE5',
     },
     locationInfo: {
         flex: 1,
@@ -503,7 +531,7 @@ const styles = StyleSheet.create({
     },
     locationCoords: {
         fontSize: 12,
-        color: '#1E3A8A',
+        color: '#059669',
     },
     helpText: {
         fontSize: 12,

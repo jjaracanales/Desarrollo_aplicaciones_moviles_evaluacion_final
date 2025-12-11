@@ -11,9 +11,8 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../../context/UserContext';
-import { Task } from '../../types/Task';
-import { getTasks, addTask, deleteTask as deleteTaskStorage, toggleTaskCompletion, updateTask } from '../../services/storageService';
-import { deletePhoto } from '../../services/fileService';
+import { Task, apiTaskToTask } from '../../types/Task';
+import { getTasks as getTasksFromApi, deleteTask as deleteTaskFromApi, toggleTaskCompletion as toggleTaskInApi, createTask, updateTask as updateTaskInApi, CreateTaskPayload, UpdateTaskPayload } from '../../services/apiService';
 import TaskItem from '../../components/TaskItem';
 import TaskForm from '../../components/TaskForm';
 import EmptyState from '../../components/EmptyState';
@@ -30,18 +29,19 @@ export default function HomeTab() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load tasks from storage
+  // Load tasks from API
   const loadTasks = useCallback(async () => {
     try {
-      const userTasks = await getTasks(email);
-      setTasks(userTasks);
-    } catch (error) {
+      const apiTasks = await getTasksFromApi();
+      const convertedTasks = apiTasks.map(apiTaskToTask);
+      setTasks(convertedTasks);
+    } catch (error: any) {
       console.error('Error loading tasks:', error);
-      Alert.alert('Error', 'No se pudieron cargar las tareas');
+      Alert.alert('Error', error.message || 'No se pudieron cargar las tareas');
     } finally {
       setIsLoading(false);
     }
-  }, [email]);
+  }, []);
 
   // Apply filter
   useEffect(() => {
@@ -67,20 +67,30 @@ export default function HomeTab() {
   };
 
   // Handle save/update task
-  const handleSaveTask = async (task: Task) => {
+  const handleSaveTask = async (taskData: CreateTaskPayload | UpdateTaskPayload, taskId?: string) => {
     try {
-      if (editingTask) {
+      console.log('[index.tsx] handleSaveTask called with:', { taskData, taskId });
+      
+      if (editingTask && taskId) {
         // Update existing task
-        await updateTask(task);
+        console.log('[index.tsx] Updating task:', taskId);
+        await updateTaskInApi(taskId, taskData as UpdateTaskPayload);
         setEditingTask(null);
       } else {
         // Add new task
-        await addTask(task);
+        console.log('[index.tsx] Creating new task');
+        await createTask(taskData as CreateTaskPayload);
       }
+      
+      console.log('[index.tsx] Task saved, reloading tasks...');
       await loadTasks();
-    } catch (error) {
-      console.error('Error saving task:', error);
-      Alert.alert('Error', 'No se pudo guardar la tarea');
+      console.log('[index.tsx] Tasks reloaded, closing form...');
+      setIsFormVisible(false);
+      console.log('[index.tsx] Form closed successfully');
+    } catch (error: any) {
+      console.error('[index.tsx] Error saving task:', error);
+      console.error('[index.tsx] Error stack:', error.stack);
+      Alert.alert('Error', error.message || 'No se pudo guardar la tarea');
     }
   };
 
@@ -93,28 +103,38 @@ export default function HomeTab() {
   // Handle delete task
   const handleDeleteTask = async (taskId: string) => {
     try {
-      // Find task to delete its photo
-      const task = tasks.find(t => t.id === taskId);
-      if (task?.photoUri) {
-        await deletePhoto(taskId);
-      }
-
-      await deleteTaskStorage(taskId);
-      await loadTasks();
-    } catch (error) {
+      Alert.alert(
+        'Eliminar tarea',
+        '¿Estás seguro de que deseas eliminar esta tarea?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Eliminar',
+            style: 'destructive',
+            onPress: async () => {
+              await deleteTaskFromApi(taskId);
+              await loadTasks();
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
       console.error('Error deleting task:', error);
-      Alert.alert('Error', 'No se pudo eliminar la tarea');
+      Alert.alert('Error', error.message || 'No se pudo eliminar la tarea');
     }
   };
 
   // Handle toggle task completion
   const handleToggleCompletion = async (taskId: string) => {
     try {
-      await toggleTaskCompletion(taskId);
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      await toggleTaskInApi(taskId, !task.completed);
       await loadTasks();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling task:', error);
-      Alert.alert('Error', 'No se pudo actualizar la tarea');
+      Alert.alert('Error', error.message || 'No se pudo actualizar la tarea');
     }
   };
 

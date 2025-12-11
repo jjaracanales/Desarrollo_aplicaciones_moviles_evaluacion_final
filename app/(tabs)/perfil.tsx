@@ -6,7 +6,7 @@ import { useUser } from '../../context/UserContext';
 import { router } from 'expo-router';
 
 export default function PerfilTab() {
-  const { email, setEmail } = useUser();
+  const { email, logout } = useUser();
 
   const handleLogout = () => {
     Alert.alert(
@@ -20,9 +20,13 @@ export default function PerfilTab() {
         {
           text: 'Cerrar sesión',
           style: 'destructive',
-          onPress: () => {
-            setEmail('');
-            router.replace('/login');
+          onPress: async () => {
+            try {
+              await logout();
+              router.replace('/login');
+            } catch (error) {
+              Alert.alert('Error', 'No se pudo cerrar sesión');
+            }
           },
         },
       ]
@@ -58,9 +62,7 @@ export default function PerfilTab() {
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.footerDivider} />
-        <Text style={styles.footerTitle}>Evaluación 2 - Aplicaciones Móviles</Text>
-        <Text style={styles.footerSubtitle}>Desarrollo de Aplicación TODO List</Text>
-
+        <Text style={styles.footerTitle}>Evaluación 3 - Aplicaciones Móviles</Text>
         <View style={styles.teamContainer}>
           <Text style={styles.teamTitle}>Integrantes del equipo:</Text>
           <Text style={styles.teamMember}>• Francisco Alejandro Bernal Araya</Text>

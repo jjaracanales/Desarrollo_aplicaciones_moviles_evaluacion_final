@@ -1,16 +1,29 @@
 export interface Location {
     latitude: number;
     longitude: number;
-    address?: string;
 }
 
 export interface Task {
     id: string;
     title: string;
-    comments?: string; // Optional comments/description
-    photoUri: string | null;
-    location: Location | null;
     completed: boolean;
-    userEmail: string;
-    createdAt: number;
+    location?: Location;
+    image?: string;
+    userId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Helper function to convert API task to local task format
+export function apiTaskToTask(apiTask: any): Task {
+    return {
+        id: apiTask.id,
+        title: apiTask.title,
+        completed: apiTask.completed,
+        location: apiTask.location,
+        image: apiTask.image,
+        userId: apiTask.userId,
+        createdAt: apiTask.createdAt,
+        updatedAt: apiTask.updatedAt,
+    };
 }

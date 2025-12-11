@@ -8,41 +8,24 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useUser } from '../context/UserContext';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
-
-// Usuarios predefinidos
-const PREDEFINED_USERS = [
-  {
-    name: 'FRANCISCO ALEJANDRO BERNAL ARAYA',
-    email: 'francisco.bernal.araya@estudiante.ipss.cl',
-  },
-  {
-    name: 'JOSE ANTONIO JARA CANALES',
-    email: 'jose.jara.canales@estudiante.ipss.cl',
-  },
-  {
-    name: 'RAUL VELOSO ORTIZ',
-    email: 'raul.veloso.ortiz@estudiante.ipss.cl',
-  },
-  {
-    name: 'ADOLFO CAMPOS GOMEZ',
-    email: 'Adolfo.campos.gomez@estudiante.ipss.cl',
-  },
-];
+import { login, register } from '../services/apiService';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [emailFocused, setEmailFocused] = useState<boolean>(false);
   const [passwordFocused, setPasswordFocused] = useState<boolean>(false);
-  const { setEmail: setUserEmail } = useUser();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
+  const { setEmail: setUserEmail, setToken } = useUser();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim()) {
       Alert.alert('Error', 'Por favor ingresa tu email');
       return;
@@ -53,19 +36,77 @@ export default function LoginScreen() {
       return;
     }
 
-    if (password !== '1234') {
-      Alert.alert('Error', 'Contraseña incorrecta');
+    setIsLoading(true);
+
+    try {
+      const response = await login({ email: email.trim(), password: password.trim() });
+      
+      // Save user data in context
+      setUserEmail(email.trim());
+      setToken(response.data.token);
+      
+      // Navigate to tabs
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      let errorMessage = 'No se pudo iniciar sesión. Verifica tu conexión a internet.';
+      
+      if (error.status === 401) {
+        errorMessage = 'Email o contraseña incorrectos. Por favor verifica tus credenciales.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert(
+        'Error de inicio de sesión',
+        errorMessage,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Por favor ingresa tu email');
       return;
     }
 
-    // Guardar el email en el contexto y navegar
-    setUserEmail(email);
-    router.replace('/(tabs)');
-  };
+    if (!password.trim() || password.trim().length < 6) {
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
 
-  const handleSelectUser = (userEmail: string) => {
-    setEmail(userEmail);
-    setPassword('1234');
+    setIsLoading(true);
+
+    try {
+      const response = await register({ email: email.trim(), password: password.trim() });
+      
+      // Save user data in context
+      setUserEmail(email.trim());
+      setToken(response.data.token);
+      
+      // Navigate to tabs
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      console.error('Register error:', error);
+      let errorMessage = 'No se pudo crear la cuenta. Verifica tu conexión a internet.';
+      
+      if (error.status === 400) {
+        errorMessage = 'Este email ya está registrado o los datos son inválidos. Intenta iniciar sesión o usa otro email.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert(
+        'Error de registro',
+        errorMessage,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -117,38 +158,7 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Quick User Selection */}
-          <View style={styles.quickSelectContainer}>
-            <Text style={styles.quickSelectTitle}>Selección rápida:</Text>
-            <View style={styles.userButtonsGrid}>
-              {PREDEFINED_USERS.map((user, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.userButton,
-                    email === user.email && styles.userButtonSelected
-                  ]}
-                  onPress={() => handleSelectUser(user.email)}
-                  activeOpacity={0.7}
-                >
-                  <MaterialIcons
-                    name="person"
-                    size={16}
-                    color={email === user.email ? '#fff' : '#10B981'}
-                  />
-                  <Text
-                    style={[
-                      styles.userButtonText,
-                      email === user.email && styles.userButtonTextSelected
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {user.name.split(' ')[0]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+
 
           {/* Password Input */}
           <View style={styles.inputWrapper}>
@@ -176,18 +186,41 @@ export default function LoginScreen() {
 
           {/* Login Button */}
           <TouchableOpacity
-            style={[styles.button, (!email.trim() || !password.trim()) && styles.buttonDisabled]}
+            style={[styles.button, (isLoading || !email.trim() || !password.trim()) && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={!email.trim() || !password.trim()}
+            disabled={isLoading || !email.trim() || !password.trim()}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Iniciar sesión</Text>
-            <MaterialIcons name="arrow-forward" size={20} color="#fff" />
+            {isLoading && !isRegistering ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.buttonText}>Iniciar sesión</Text>
+                <MaterialIcons name="arrow-forward" size={20} color="#fff" />
+              </>
+            )}
           </TouchableOpacity>
 
-          {/* Aviso Contraseña */}
+          {/* Register Button */}
+          <TouchableOpacity
+            style={[styles.buttonSecondary, (isLoading || !email.trim() || !password.trim()) && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={isLoading || !email.trim() || !password.trim()}
+            activeOpacity={0.8}
+          >
+            {isLoading && isRegistering ? (
+              <ActivityIndicator color="#3B82F6" />
+            ) : (
+              <>
+                <Text style={styles.buttonSecondaryText}>Crear cuenta</Text>
+                <MaterialIcons name="person-add" size={20} color="#3B82F6" />
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* Hint */}
           <Text style={styles.hint}>
-            💡 La contraseña es "1234"
+            💡 Contraseña mínima: 6 caracteres{'\n'}Conectado al backend real
           </Text>
         </View>
 
@@ -347,46 +380,27 @@ const styles = StyleSheet.create({
     marginTop: 24,
     textAlign: 'center',
     color: '#60A5FA',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
+    lineHeight: 18,
   },
-  quickSelectContainer: {
-    marginBottom: 20,
-  },
-  quickSelectTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
-  },
-  userButtonsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  userButton: {
+  buttonSecondary: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    width: '48%',
-  },
-  userButtonSelected: {
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingVertical: 18,
+    borderRadius: 16,
+    marginTop: 12,
+    borderWidth: 2,
     borderColor: '#3B82F6',
   },
-  userButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94A3B8',
-    marginLeft: 6,
-  },
-  userButtonTextSelected: {
-    color: '#FFFFFF',
+  buttonSecondaryText: {
+    color: '#3B82F6',
+    fontSize: 18,
+    fontWeight: '700',
+    marginRight: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
 });
 

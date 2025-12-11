@@ -1,14 +1,43 @@
-# 📱 TODO List - Aplicación Móvil
+# 📱 TODO List - Aplicación Móvil con Backend
 
-**Evaluación 2 - Desarrollo de Aplicaciones Móviles**  
+**Evaluación 3 - Desarrollo de Aplicaciones Móviles**  
 Instituto Profesional San Sebastián
 
 ## 👥 Integrantes del Equipo
 
-- **Francisco Alejandro Bernal Araya** - francisco.bernal.araya@estudiante.ipss.cl
 - **José Antonio Jara Canales** - jose.jara.canales@estudiante.ipss.cl  
 - **Raúl Veloso Ortiz** - raul.veloso.ortiz@estudiante.ipss.cl
 - **Adolfo Campos Gómez** - Adolfo.campos.gomez@estudiante.ipss.cl
+
+---
+
+## 🆕 Cambios Evaluación 3 (Backend Integration)
+
+### 🔐 Autenticación con Backend
+- **Login/Registro** conectado a API REST
+- **JWT Token** guardado en AsyncStorage para persistencia de sesión
+- **Rutas protegidas** que requieren autenticación
+- **Manejo de errores** HTTP (401, 400, 500, etc.)
+- **Cierre de sesión** con limpieza de token
+
+### 🌐 CRUD 100% en Backend
+- **GET /todos**: Listar todas las tareas del usuario autenticado
+- **POST /todos**: Crear nueva tarea con imagen y ubicación
+- **PATCH /todos/:id**: Actualizar tarea (completar, editar, etc.)
+- **DELETE /todos/:id**: Eliminar tarea del servidor
+- Las tareas están asociadas al usuario autenticado mediante token JWT
+
+### 📤 Envío de Imágenes
+- Subida mediante **multipart/form-data** a `/images`
+- El backend almacena en **Cloudflare R2**
+- Devuelve URL pública de la imagen
+- Las imágenes se asocian automáticamente a las tareas
+- Máximo 5MB por imagen (JPEG, PNG, WebP, GIF)
+
+### ⚙️ Variables de Entorno
+- Archivo `.env` con `EXPO_PUBLIC_API_URL`
+- Configuración centralizada de la URL del backend
+- Backend utilizado: `https://todo-list.dobleb.cl`
 
 ---
 
@@ -26,35 +55,39 @@ Esta aplicación presenta un **diseño oscuro profesional** con:
 
 ## 🚀 Funcionalidades Implementadas
 
-### ✅ Gestión Completa de Tareas
-- **Crear tareas** con título, comentarios, foto y ubicación GPS
-- **Editar tareas** existentes (título, comentarios, foto, ubicación)
+### ✅ Gestión Completa de Tareas (Backend)
+- **Crear tareas** con título, descripción, foto y ubicación GPS
+- **Editar tareas** existentes desde el servidor
 - **Eliminar tareas** con confirmación
-- **Marcar como completadas/pendientes**
+- **Marcar como completadas/pendientes** actualiza en backend
 - **Filtros**: Ver todas, solo pendientes, o solo completadas
 - **Estadísticas en tiempo real**: Total, pendientes y completadas
+- **Pull to refresh** para sincronizar con servidor
 
 ### 📸 Captura de Imágenes
 - Tomar fotos con la **cámara**
 - Seleccionar desde la **galería**
-- Almacenamiento en **filesystem local** con expo-file-system
+- Conversión a **base64** para envío al servidor
+- Almacenamiento en servidor con URL devuelta
 
 ### 📍 Geolocalización
 - Captura **automática de ubicación** al crear tareas
 - Opción de captura **manual** de ubicación
 - **Reverse geocoding**: Convierte coordenadas en direcciones legibles
-- Muestra dirección en cada tarea
+- Coordenadas enviadas al backend (latitude, longitude)
 
-### 👤 Multi-Usuario
-- **Login con email y contraseña**
-- **4 usuarios predefinidos** para testing rápido
+### 👤 Autenticación de Usuarios
+- **Login** con credenciales contra backend
+- **Registro** de nuevos usuarios
+- **Persistencia de sesión** con token en AsyncStorage
+- **Cierre de sesión** con limpieza de datos
 - Cada usuario ve **solo sus propias tareas**
-- Datos aislados por email
+- Datos aislados por token de autenticación
 
-### 💾 Persistencia Local
-- **AsyncStorage**: Metadatos de tareas
-- **FileSystem**: Fotos en alta calidad
-- **Persistencia completa**: Los datos sobreviven al cierre de la app
+### 💾 Persistencia
+- **Token en AsyncStorage**: Mantiene sesión activa
+- **Datos en Backend**: Todas las tareas se almacenan en el servidor
+- **Sincronización**: Pull to refresh para actualizar desde backend
 
 ---
 
@@ -66,15 +99,29 @@ Esta aplicación presenta un **diseño oscuro profesional** con:
 - **Expo Router** para navegación
 
 ### Bibliotecas Principales
-- `@react-native-async-storage/async-storage` - Persistencia de datos
+- `@react-native-async-storage/async-storage` - Persistencia de token
 - `expo-image-picker` - Captura de fotos (cámara y galería)
 - `expo-location` - Geolocalización y geocoding
-- `expo-file-system` - Almacenamiento de archivos
+- `expo-file-system` - Conversión de imágenes a base64
+- `expo-constants` - Manejo de variables de entorno
 - `@expo/vector-icons` - Iconografía Material Design
 
+### Backend API
+- **URL Base**: `https://todo-list.dobleb.cl`
+- **Autenticación**: JWT Bearer Token
+- **Endpoints**:
+  - `POST /auth/login` - Iniciar sesión
+  - `POST /auth/register` - Registrar usuario
+  - `GET /todos` - Listar tareas del usuario
+  - `POST /todos` - Crear tarea
+  - `PATCH /todos/:id` - Actualizar tarea
+  - `DELETE /todos/:id` - Eliminar tarea
+  - `POST /images` - Subir imagen (multipart/form-data)
+
 ### Arquitectura
-- **Context API** para estado global del usuario
-- **Servicios separados** para lógica de negocio
+- **Context API** para estado global (usuario + autenticación)
+- **Servicios API** centralizados en `apiService.ts`
+- **Manejo de errores HTTP** con mensajes descriptivos
 - **Componentes reutilizables**
 - **TypeScript interfaces** para modelos de datos
 
@@ -84,37 +131,40 @@ Esta aplicación presenta un **diseño oscuro profesional** con:
 
 ```
 TodoList/
+├── .env                      # Variables de entorno (API URL)
 ├── app/                      # Pantallas de la aplicación
 │   ├── (tabs)/              
-│   │   ├── index.tsx        # Home: Lista de tareas
-│   │   ├── perfil.tsx       # Perfil del usuario
+│   │   ├── index.tsx        # Home: Lista de tareas del backend
+│   │   ├── perfil.tsx       # Perfil y logout
 │   │   └── _layout.tsx      # Navegación de tabs
-│   ├── login.tsx            # Pantalla de login
-│   └── _layout.tsx          # Layout raíz
+│   ├── login.tsx            # Login/Registro con API
+│   ├── index.tsx            # Redirección inicial
+│   └── _layout.tsx          # Layout raíz con protección de rutas
 ├── components/              # Componentes reutilizables
 │   ├── TaskItem.tsx         # Item individual de tarea
-│   ├── TaskForm.tsx         # Formulario crear/editar
+│   ├── TaskForm.tsx         # Formulario con envío a API
 │   └── EmptyState.tsx       # Estado vacío
 ├── context/                 # Contextos de React
-│   └── UserContext.tsx      # Contexto global de usuario
+│   └── UserContext.tsx      # Auth + token management
 ├── services/                # Capa de servicios
-│   ├── storageService.ts    # Operaciones AsyncStorage
-│   ├── fileService.ts       # Gestión de archivos
+│   ├── apiService.ts        # API REST + Auth (NUEVO)
+│   ├── storageService.ts    # (Deprecado - solo token ahora)
+│   ├── fileService.ts       # Conversión base64
 │   └── locationService.ts   # Servicios de ubicación
 ├── types/                   # Definiciones TypeScript
-│   └── Task.ts             # Interfaces Task y Location
+│   └── Task.ts             # Interfaces Task actualizadas
 └── package.json
 ```
 
 ---
 
-## 🎯 Usuarios de Testing
+## 🎯 Testing de la Aplicación
 
-La aplicación incluye **4 usuarios predefinidos** para facilitar las pruebas:
+Puedes crear usuarios nuevos o usar credenciales de prueba:
 
-| Nombre     | Email                                              | Contraseña |
+| Acción     | Email                                              | Contraseña |
 |------------|----------------------------------------------------|------------|
-| FRANCISCO  | francisco.bernal.araya@estudiante.ipss.cl         | 1234       |
+| Registrar  | cualquier_email@ejemplo.com                        | mínimo 4 caracteres |
 | JOSE       | jose.jara.canales@estudiante.ipss.cl              | 1234       |
 | RAUL       | raul.veloso.ortiz@estudiante.ipss.cl              | 1234       |
 | ADOLFO     | Adolfo.campos.gomez@estudiante.ipss.cl            | 1234       |
@@ -128,6 +178,7 @@ La aplicación incluye **4 usuarios predefinidos** para facilitar las pruebas:
 - npm o yarn
 - Expo CLI
 - Dispositivo físico o emulador (iOS/Android)
+- Conexión a Internet (para conectar con backend)
 
 ### Pasos de Instalación
 
@@ -139,10 +190,13 @@ cd Desarrollo_aplicaciones_moviles_evaluacion2
 # 2. Instalar dependencias
 npm install --legacy-peer-deps
 
-# 3. Iniciar el servidor de desarrollo
+# 3. Verificar archivo .env (ya incluido)
+# EXPO_PUBLIC_API_URL=https://todo-list.dobleb.cl
+
+# 4. Iniciar el servidor de desarrollo
 npm start
 
-# 4. Escanear QR con Expo Go (móvil) o presionar:
+# 5. Escanear QR con Expo Go (móvil) o presionar:
 # - i para iOS simulator
 # - a para Android emulator
 ```
@@ -160,6 +214,7 @@ La aplicación solicitará los siguientes permisos al usuario:
 - Cámara
 - Leer almacenamiento externo  
 - Ubicación precisa
+- Acceso a Internet
 
 ---
 
@@ -201,23 +256,37 @@ La aplicación presenta:
 
 ## 🔄 Flujo de Trabajo
 
+### Registro/Login
+1. Abrir app → Pantalla de Login
+2. **Opción 1**: Registrar nuevo usuario (email + contraseña)
+3. **Opción 2**: Iniciar sesión con credenciales existentes
+4. Token se guarda automáticamente en AsyncStorage
+5. Redirección a pantalla principal
+
 ### Crear Tarea
-1. Login con usuario predefinido o email personalizado
-2. Tap en botón flotante **+**
-3. Ingresar título (requerido)
-4. Agregar comentarios opcionales (máx 500 caracteres)
-5. Tomar foto o seleccionar de galería (opcional)
-6. Capturar ubicación manualmente o dejar que se capture automáticamente
-7. Guardar
+1. Tap en botón flotante **+**
+2. Ingresar título (requerido)
+3. Agregar descripción opcional (máx 500 caracteres)
+4. Tomar foto o seleccionar de galería (opcional)
+   - Se convierte a base64 automáticamente
+5. Capturar ubicación manualmente o dejar que se capture automáticamente
+6. Guardar → Se envía al backend
+7. Lista se actualiza con la nueva tarea
 
 ### Editar Tarea
 1. Tap en icono **lápiz azul** de la tarea
-2. Modificar título, comentarios, foto o ubicación
-3. Actualizar
+2. Modificar título, descripción, foto o ubicación
+3. Actualizar → PATCH al backend
+4. Lista se sincroniza
 
 ### Completar/Eliminar
-- **Completar**: Tap en checkbox
-- **Eliminar**: Tap en icono basura → Confirmar
+- **Completar**: Tap en checkbox → PATCH al backend
+- **Eliminar**: Tap en icono basura → Confirmación → DELETE al backend
+
+### Cerrar Sesión
+1. Ir a tab **Perfil**
+2. Tap en "Cerrar sesión"
+3. Confirmar → Token se elimina → Redirección a Login
 
 ---
 
@@ -225,35 +294,84 @@ La aplicación presenta:
 
 ### Casos de Prueba Principales
 
-1. ✅ Crear tarea con foto y ubicación
-2. ✅ Editar tarea existente  
-3. ✅ Marcar como completada/pendiente
-4. ✅ Filtrar tareas por estado
-5. ✅ Eliminar tarea con confirmación
-6. ✅ Persistencia tras cierre de app
-7. ✅ Multi-usuario (datos aislados)
-8. ✅ Pull-to-refresh
+1. ✅ Registro de nuevo usuario con backend
+2. ✅ Login con credenciales válidas
+3. ✅ Persistencia de sesión (token en AsyncStorage)
+4. ✅ Crear tarea con foto y ubicación → Enviada a backend
+5. ✅ Editar tarea existente → Actualizada en backend
+6. ✅ Marcar como completada/pendiente → PATCH al backend
+7. ✅ Filtrar tareas por estado
+8. ✅ Eliminar tarea → DELETE del backend
+9. ✅ Pull-to-refresh para sincronizar con servidor
+10. ✅ Multi-usuario (cada usuario ve solo sus tareas)
+11. ✅ Manejo de errores HTTP (401, 400, 500)
+12. ✅ Cierre de sesión y limpieza de token
+
 
 ---
 
-## 🏆 Evaluación 2 - Criterios Cumplidos
+## 🏆 Evaluación 3 - Criterios Cumplidos
 
-- [x] Implementación completa de TODO List
-- [x] CRUD de tareas
-- [x] Captura de fotos (cámara/galería)
-- [x] Geolocalización GPS
-- [x] Persistencia local (AsyncStorage + FileSystem)
-- [x] Multi-usuario con login
-- [x] Edición de tareas
-- [x] Comentarios/descripción en tareas
-- [x] Diseño profesional y moderno
-- [x] Documentación completa
+- [x] **Autenticación contra backend** (login/registro)
+- [x] **Token persistente** en AsyncStorage
+- [x] **Rutas protegidas** con verificación de autenticación
+- [x] **CRUD 100% en backend** (GET, POST, PATCH, DELETE)
+- [x] **Manejo de imágenes** (conversión base64 + envío al servidor)
+- [x] **Variables de entorno** (.env con API_URL)
+- [x] **Manejo de errores HTTP** (401, 400, 500)
+- [x] **Tareas asociadas al usuario** (mediante token)
+- [x] **Arquitectura limpia** (servicios API separados)
+- [x] **TypeScript** en todo el proyecto
+- [x] **Documentación completa** (README actualizado)
+
+### Cambios vs Evaluación 2
+- ❌ ~~Persistencia local de tareas~~ → ✅ **Backend REST API**
+- ❌ ~~Usuarios predefinidos~~ → ✅ **Autenticación real con JWT**
+- ❌ ~~AsyncStorage para tareas~~ → ✅ **Solo token, tareas en servidor**
+- ✅ **Mismas funcionalidades** (foto, ubicación, CRUD, filtros)
+
+---
+
+## 🤖 Uso de Inteligencia Artificial
+
+### GitHub Copilot
+- **Autocomplete de código**: Sugerencias de código TypeScript/React Native
+- **Documentación**: Comentarios JSDoc en funciones complejas
+- **Refactorización**: Mejoras en estructura de componentes
+
+### ChatGPT/Claude (Asistente)
+- **Migración a backend**: Consultas sobre integración de API REST
+- **Manejo de errores**: Patrones de try-catch y mensajes de error
+- **Conversión base64**: Implementación de envío de imágenes
+- **TypeScript interfaces**: Definición de tipos para API responses
+- **Documentación**: Estructura y contenido del README
+
+### Declaración
+El equipo utilizó herramientas de IA como **asistentes de desarrollo**, pero:
+- ✅ Todo el código fue **revisado y comprendido** por los integrantes
+- ✅ Las decisiones de **arquitectura** fueron tomadas por el equipo
+- ✅ El **diseño UI/UX** es original del equipo
+- ✅ La **lógica de negocio** fue implementada por los integrantes
+- ✅ Las **pruebas y debugging** fueron realizadas manualmente
+
+---
+
+## 👥 Roles del Equipo
+
+| Integrante | Rol Principal | Contribuciones |
+|------------|---------------|----------------|
+| **Francisco Bernal** | Frontend Developer | Diseño UI, componentes reutilizables, estilos |
+| **José Jara** | Backend Integration | Servicios API, autenticación, manejo de errores |
+| **Raúl Veloso** | Mobile Features | Cámara, geolocalización, permisos |
+| **Adolfo Campos** | Testing & QA | Pruebas funcionales, documentación, validación |
+
+**Nota**: Todos los integrantes participaron en la implementación general y tienen commits en el repositorio.
 
 ---
 
 ## 📄 Licencia
 
-Proyecto académico - Instituto Profesional San Sebastián © 2024
+Proyecto académico - Instituto Profesional San Sebastián © 2025
 
 ---
 
