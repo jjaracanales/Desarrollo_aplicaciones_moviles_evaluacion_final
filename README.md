@@ -9,6 +9,7 @@ Instituto Profesional San Sebastián
 - **Raúl Veloso Ortiz** - raul.veloso.ortiz@estudiante.ipss.cl
 - **Adolfo Campos Gómez** - Adolfo.campos.gomez@estudiante.ipss.cl
 
+
 ---
 
 ## 🆕 Cambios Evaluación 3 (Backend Integration)
@@ -360,12 +361,12 @@ El equipo utilizó herramientas de IA como **asistentes de desarrollo**, pero:
 
 | Integrante | Rol Principal | Contribuciones |
 |------------|---------------|----------------|
-| **Francisco Bernal** | Frontend Developer | Diseño UI, componentes reutilizables, estilos |
-| **José Jara** | Backend Integration | Servicios API, autenticación, manejo de errores |
-| **Raúl Veloso** | Mobile Features | Cámara, geolocalización, permisos |
+| **José Jara** | Backend Integration & Lead | Servicios API, autenticación, manejo de errores, arquitectura |
+| **Raúl Veloso** | Mobile Features | Cámara, geolocalización, permisos nativos |
 | **Adolfo Campos** | Testing & QA | Pruebas funcionales, documentación, validación |
 
 **Nota**: Todos los integrantes participaron en la implementación general y tienen commits en el repositorio.
+
 
 ---
 

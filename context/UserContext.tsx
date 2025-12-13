@@ -16,9 +16,9 @@ const UserContext = createContext<UserContextType>({
   token: null,
   isAuthenticated: false,
   isLoading: true,
-  setEmail: () => {},
-  setToken: () => {},
-  logout: async () => {},
+  setEmail: () => { },
+  setToken: () => { },
+  logout: async () => { },
 });
 
 export const useUser = () => useContext(UserContext);
@@ -32,7 +32,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Check for existing token on mount
+  // Verificar token existente al montar
   useEffect(() => {
     checkToken();
   }, []);

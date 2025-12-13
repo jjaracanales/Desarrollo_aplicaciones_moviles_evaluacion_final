@@ -11,6 +11,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../../context/UserContext';
+import { useApiNotification } from '../../context/ApiNotificationContext';
 import { Task, apiTaskToTask } from '../../types/Task';
 import { getTasks as getTasksFromApi, deleteTask as deleteTaskFromApi, toggleTaskCompletion as toggleTaskInApi, createTask, updateTask as updateTaskInApi, CreateTaskPayload, UpdateTaskPayload } from '../../services/apiService';
 import TaskItem from '../../components/TaskItem';
@@ -21,6 +22,7 @@ type Filter = 'all' | 'pending' | 'completed';
 
 export default function HomeTab() {
   const { email } = useUser();
+  const { showNotification } = useApiNotification();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
@@ -29,7 +31,7 @@ export default function HomeTab() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load tasks from API
+  // Cargar tareas desde la API
   const loadTasks = useCallback(async () => {
     try {
       const apiTasks = await getTasksFromApi();
@@ -43,7 +45,7 @@ export default function HomeTab() {
     }
   }, []);
 
-  // Apply filter
+  // Aplicar filtro
   useEffect(() => {
     let filtered = tasks;
     if (filter === 'pending') {
@@ -54,39 +56,33 @@ export default function HomeTab() {
     setFilteredTasks(filtered);
   }, [tasks, filter]);
 
-  // Initial load
+  // Carga inicial
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
 
-  // Handle pull to refresh
+  // Manejar pull to refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadTasks();
     setIsRefreshing(false);
   };
 
-  // Handle save/update task
+  // Manejar guardar/actualizar tarea
   const handleSaveTask = async (taskData: CreateTaskPayload | UpdateTaskPayload, taskId?: string) => {
     try {
-      console.log('[index.tsx] handleSaveTask called with:', { taskData, taskId });
-      
       if (editingTask && taskId) {
-        // Update existing task
-        console.log('[index.tsx] Updating task:', taskId);
+        // Actualizar tarea existente
         await updateTaskInApi(taskId, taskData as UpdateTaskPayload);
         setEditingTask(null);
       } else {
-        // Add new task
-        console.log('[index.tsx] Creating new task');
+        // Agregar nueva tarea
         await createTask(taskData as CreateTaskPayload);
+        showNotification('✓ Tarea creada', 'success');
       }
-      
-      console.log('[index.tsx] Task saved, reloading tasks...');
+
       await loadTasks();
-      console.log('[index.tsx] Tasks reloaded, closing form...');
       setIsFormVisible(false);
-      console.log('[index.tsx] Form closed successfully');
     } catch (error: any) {
       console.error('[index.tsx] Error saving task:', error);
       console.error('[index.tsx] Error stack:', error.stack);
@@ -94,13 +90,13 @@ export default function HomeTab() {
     }
   };
 
-  // Handle edit task
+  // Manejar edición de tarea
   const handleEdit = (task: Task) => {
     setEditingTask(task);
     setIsFormVisible(true);
   };
 
-  // Handle delete task
+  // Manejar eliminación de tarea
   const handleDeleteTask = async (taskId: string) => {
     try {
       Alert.alert(
@@ -113,6 +109,7 @@ export default function HomeTab() {
             style: 'destructive',
             onPress: async () => {
               await deleteTaskFromApi(taskId);
+              showNotification('✓ Tarea eliminada', 'success');
               await loadTasks();
             },
           },
@@ -124,12 +121,12 @@ export default function HomeTab() {
     }
   };
 
-  // Handle toggle task completion
+  // Manejar cambio de estado de tarea
   const handleToggleCompletion = async (taskId: string) => {
     try {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
-      
+
       await toggleTaskInApi(taskId, !task.completed);
       await loadTasks();
     } catch (error: any) {
@@ -138,7 +135,7 @@ export default function HomeTab() {
     }
   };
 
-  // Stats
+  // Estadísticas
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.completed).length;
   const pendingTasks = totalTasks - completedTasks;

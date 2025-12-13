@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useUser } from '../context/UserContext';
+import { useApiNotification } from '../context/ApiNotificationContext';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import { login, register } from '../services/apiService';
@@ -24,6 +25,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRegistering, setIsRegistering] = useState<boolean>(false);
   const { setEmail: setUserEmail, setToken } = useUser();
+  const { showNotification } = useApiNotification();
 
   const handleLogin = async () => {
     if (!email.trim()) {
@@ -40,23 +42,26 @@ export default function LoginScreen() {
 
     try {
       const response = await login({ email: email.trim(), password: password.trim() });
-      
-      // Save user data in context
+
+      // Guardar datos de usuario en contexto
       setUserEmail(email.trim());
       setToken(response.data.token);
-      
-      // Navigate to tabs
+
+      // Mostrar notificación de éxito
+      showNotification('✓ Sesión iniciada', 'success');
+
+      // Navegar a tabs
       router.replace('/(tabs)');
     } catch (error: any) {
       console.error('Login error:', error);
       let errorMessage = 'No se pudo iniciar sesión. Verifica tu conexión a internet.';
-      
+
       if (error.status === 401) {
         errorMessage = 'Email o contraseña incorrectos. Por favor verifica tus credenciales.';
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       Alert.alert(
         'Error de inicio de sesión',
         errorMessage,
@@ -79,26 +84,34 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true);
+    setIsRegistering(true);
 
     try {
       const response = await register({ email: email.trim(), password: password.trim() });
-      
-      // Save user data in context
+
+      // Guardar datos de usuario en contexto
       setUserEmail(email.trim());
       setToken(response.data.token);
-      
-      // Navigate to tabs
-      router.replace('/(tabs)');
+
+      // Mostrar notificación de éxito
+      showNotification('✓ Usuario registrado', 'success');
+
+      // Mostrar mensaje de éxito
+      Alert.alert('¡Cuenta creada!', 'Tu cuenta ha sido creada exitosamente', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)') }
+      ]);
     } catch (error: any) {
       console.error('Register error:', error);
       let errorMessage = 'No se pudo crear la cuenta. Verifica tu conexión a internet.';
-      
-      if (error.status === 400) {
-        errorMessage = 'Este email ya está registrado o los datos son inválidos. Intenta iniciar sesión o usa otro email.';
+
+      if (error.status === 409) {
+        errorMessage = 'Este email ya está registrado. Por favor inicia sesión o usa otro email.';
+      } else if (error.status === 400) {
+        errorMessage = 'Datos inválidos. Verifica que el email sea válido y la contraseña tenga al menos 6 caracteres.';
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       Alert.alert(
         'Error de registro',
         errorMessage,
@@ -106,6 +119,7 @@ export default function LoginScreen() {
       );
     } finally {
       setIsLoading(false);
+      setIsRegistering(false);
     }
   };
 

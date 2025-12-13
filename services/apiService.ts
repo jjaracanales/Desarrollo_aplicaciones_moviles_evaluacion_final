@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 const API_URL = Constants.expoConfig?.extra?.apiUrl || process.env.EXPO_PUBLIC_API_URL || 'https://todo-list.dobleb.cl';
 const TOKEN_KEY = '@todolist_token';
 
-// Types
+// Tipos
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -67,7 +67,7 @@ export interface UpdateTaskPayload {
   image?: string;
 }
 
-// Token management
+// Gestión de tokens
 export async function saveToken(token: string): Promise<void> {
   try {
     await AsyncStorage.setItem(TOKEN_KEY, token);
@@ -95,7 +95,7 @@ export async function removeToken(): Promise<void> {
   }
 }
 
-// API Error handling
+// Manejo de errores de API
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -110,11 +110,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
   } catch (e) {
     data = { success: false, error: 'Error al procesar respuesta del servidor' };
   }
-  
+
   if (!response.ok || data.success === false) {
-    // Extract error message from various possible formats
+    // Extraer mensaje de error de varios formatos posibles
     let errorMessage = 'Error desconocido';
-    
+
     if (typeof data.error === 'string') {
       errorMessage = data.error;
     } else if (typeof data.message === 'string') {
@@ -122,16 +122,16 @@ async function handleResponse<T>(response: Response): Promise<T> {
     } else if (data.error && typeof data.error === 'object') {
       errorMessage = JSON.stringify(data.error);
     }
-    
-    // Handle specific status codes
+
+    // Manejar códigos de estado específicos
     if (response.status === 401) {
-      // Check if it's a login error or expired token
+      // Verificar si es un error de login o token expirado
       const isLoginError = !await getToken();
       if (isLoginError) {
-        // It's a failed login attempt, show the actual error
+        // Es un intento de login fallido, mostrar el error real
         throw new ApiError(401, errorMessage || 'Email o contraseña incorrectos');
       } else {
-        // Token expired during a request
+        // Token expirado durante una solicitud
         await removeToken();
         throw new ApiError(401, 'Sesión expirada. Por favor inicia sesión nuevamente.');
       }
@@ -142,14 +142,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
     } else if (response.status === 500) {
       throw new ApiError(500, errorMessage || 'Error del servidor. Intenta nuevamente más tarde.');
     }
-    
+
     throw new ApiError(response.status, errorMessage);
   }
-  
+
   return data;
 }
 
-// Auth API
+// API de Autenticación
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -159,14 +159,14 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
       },
       body: JSON.stringify(credentials),
     });
-    
+
     const data = await handleResponse<AuthResponse>(response);
-    
-    // Save token
+
+    // Guardar token
     if (data.success && data.data.token) {
       await saveToken(data.data.token);
     }
-    
+
     return data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -186,14 +186,14 @@ export async function register(credentials: LoginCredentials): Promise<AuthRespo
       },
       body: JSON.stringify(credentials),
     });
-    
+
     const data = await handleResponse<AuthResponse>(response);
-    
-    // Save token
+
+    // Guardar token
     if (data.success && data.data.token) {
       await saveToken(data.data.token);
     }
-    
+
     return data;
   } catch (error) {
     if (error instanceof ApiError) {
@@ -204,13 +204,13 @@ export async function register(credentials: LoginCredentials): Promise<AuthRespo
   }
 }
 
-// Tasks API
+// API de Tareas
 async function getAuthHeaders(): Promise<HeadersInit> {
   const token = await getToken();
   if (!token) {
     throw new ApiError(401, 'No hay sesión activa');
   }
-  
+
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,
@@ -224,7 +224,7 @@ export async function getTasks(): Promise<ApiTask[]> {
       method: 'GET',
       headers,
     });
-    
+
     const result = await handleResponse<ApiTasksResponse>(response);
     return result.data;
   } catch (error) {
@@ -243,7 +243,7 @@ export async function getTask(id: string): Promise<ApiTask> {
       method: 'GET',
       headers,
     });
-    
+
     const result = await handleResponse<ApiTaskResponse>(response);
     return result.data;
   } catch (error) {
@@ -257,22 +257,17 @@ export async function getTask(id: string): Promise<ApiTask> {
 
 export async function createTask(payload: CreateTaskPayload): Promise<ApiTask> {
   try {
-    console.log('[apiService] Creating task with payload:', JSON.stringify(payload, null, 2));
     const headers = await getAuthHeaders();
-    console.log('[apiService] Headers:', headers);
-    
+
     const response = await fetch(`${API_URL}/todos`, {
       method: 'POST',
       headers,
       body: JSON.stringify(payload),
     });
-    
-    console.log('[apiService] Response status:', response.status);
+
     const result = await handleResponse<ApiTaskResponse>(response);
-    console.log('[apiService] Task created successfully:', result.data);
     return result.data;
   } catch (error) {
-    console.error('[apiService] Create task error:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -288,7 +283,7 @@ export async function updateTask(id: string, payload: UpdateTaskPayload): Promis
       headers,
       body: JSON.stringify(payload),
     });
-    
+
     const result = await handleResponse<ApiTaskResponse>(response);
     return result.data;
   } catch (error) {
@@ -307,7 +302,7 @@ export async function deleteTask(id: string): Promise<void> {
       method: 'DELETE',
       headers,
     });
-    
+
     await handleResponse<ApiTaskResponse>(response);
   } catch (error) {
     if (error instanceof ApiError) {
@@ -322,7 +317,7 @@ export async function toggleTaskCompletion(id: string, completed: boolean): Prom
   return updateTask(id, { completed });
 }
 
-// Upload image using multipart/form-data
+// Subir imagen usando multipart/form-data
 export async function uploadImage(imageUri: string): Promise<string> {
   try {
     const token = await getToken();
@@ -330,15 +325,15 @@ export async function uploadImage(imageUri: string): Promise<string> {
       throw new ApiError(401, 'No hay sesión activa');
     }
 
-    // Create form data
+    // Crear form data
     const formData = new FormData();
-    
-    // Extract filename from URI
+
+    // Extraer nombre de archivo desde URI
     const filename = imageUri.split('/').pop() || 'photo.jpg';
     const match = /\.(\w+)$/.exec(filename);
     const type = match ? `image/${match[1]}` : 'image/jpeg';
-    
-    // Append image file
+
+    // Agregar archivo de imagen
     formData.append('image', {
       uri: imageUri,
       name: filename,

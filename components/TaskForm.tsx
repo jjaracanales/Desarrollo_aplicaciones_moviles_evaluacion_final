@@ -40,10 +40,10 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
 
     const isEditMode = !!editingTask;
 
-    // Load task data when editing
+    // Cargar datos de tarea al editar
     useEffect(() => {
         if (visible && editingTask) {
-            // Load editing task data
+            // Cargar datos de tarea para edición
             setTitle(editingTask.title);
             setDescription(''); // API no tiene description
             setImageUri(editingTask.image || null);
@@ -53,12 +53,12 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
                 setLocationAddress(`${editingTask.location.latitude.toFixed(6)}, ${editingTask.location.longitude.toFixed(6)}`);
             }
         } else if (visible && !editingTask) {
-            // Reset form for new task
+            // Resetear formulario para nueva tarea
             resetForm();
         }
     }, [visible, editingTask]);
 
-    // Reset form when modal closes
+    // Resetear formulario cuando el modal se cierra
     useEffect(() => {
         if (!visible) {
             resetForm();
@@ -143,7 +143,7 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
         }
     };
 
-    // Convert image to base64
+    // Convertir imagen a base64
     const convertImageToBase64 = async (uri: string): Promise<string | null> => {
         try {
             // Si la imagen ya es de la API (https://), no la convertimos
@@ -169,33 +169,26 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
 
         setIsSaving(true);
         try {
-            console.log('Starting task save...');
-            
+
             // Upload image first if it's a new local image
             let imageUrl: string | undefined = undefined;
             if (imageUri && !imageUri.startsWith('http://') && !imageUri.startsWith('https://')) {
-                // It's a local image, we need to upload it
-                console.log('Uploading image...');
+                // Es una imagen local, necesitamos subirla
                 const { uploadImage } = await import('../services/apiService');
                 imageUrl = await uploadImage(imageUri);
-                console.log('Image uploaded:', imageUrl);
             } else if (imageUri) {
-                // It's already an uploaded image URL
+                // Ya es una URL de imagen subida
                 imageUrl = imageUri;
-                console.log('Using existing image URL:', imageUrl);
             }
 
-            // Get location automatically if not set
+            // Obtener ubicación automáticamente si no está configurada
             let taskLocation: { latitude: number; longitude: number } | undefined = undefined;
-            
+
             if (latitude !== undefined && longitude !== undefined) {
-                console.log('Using manual location:', { latitude, longitude });
                 taskLocation = { latitude, longitude };
             } else if (!isEditMode) {
-                // Auto-capture location for new tasks
-                console.log('Auto-capturing location for new task...');
+                // Auto-captura de ubicación para tareas nuevas
                 const loc = await getCurrentLocation();
-                console.log('Location captured:', loc);
                 if (loc) {
                     taskLocation = { latitude: loc.latitude, longitude: loc.longitude };
                 }
@@ -207,22 +200,17 @@ export default function TaskForm({ visible, userEmail, editingTask, onClose, onS
                 image: imageUrl,
             };
 
-            console.log('Task data prepared:', taskData);
-
             if (isEditMode && editingTask) {
-                console.log('Updating existing task:', editingTask.id);
-                // If editing and photo hasn't changed, don't include it
+                // Si está editando y la foto no cambió, no la incluir
                 if (imageUrl === editingTask.image) {
                     delete (taskData as any).image;
                 }
                 await onSave(taskData, editingTask.id);
             } else {
-                console.log('Creating new task...');
                 await onSave(taskData);
             }
 
-            console.log('Task saved successfully, closing modal...');
-            // Close modal and reset form
+            // Cerrar modal y resetear formulario
             onClose();
             resetForm();
         } catch (error: any) {

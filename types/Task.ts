@@ -14,7 +14,7 @@ export interface Task {
     updatedAt: string;
 }
 
-// Helper function to convert API task to local task format
+// Función auxiliar para convertir tarea de API a formato local
 export function apiTaskToTask(apiTask: any): Task {
     return {
         id: apiTask.id,

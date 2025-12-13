@@ -10,6 +10,7 @@ Nombres del Grupo:
 - Raúl Veloso Ortiz
 - Adolfo Campos Gómez
 
+
 Repositorio: https://github.com/jjaracanales/Desarrollo_aplicaciones_moviles_evaluacion2
 
 Fecha de Entrega: 21 de Diciembre de 2025

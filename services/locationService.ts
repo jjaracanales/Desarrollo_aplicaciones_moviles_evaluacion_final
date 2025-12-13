@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { Location as LocationType } from '../types/Task';
 
 /**
- * Request location permissions
+ * Solicitar permisos de ubicación
  */
 export async function requestLocationPermission(): Promise<boolean> {
     try {
@@ -15,14 +15,15 @@ export async function requestLocationPermission(): Promise<boolean> {
 }
 
 /**
- * Get current location
+ * Obtener ubicación actual
+ * Retorna null silenciosamente si la ubicación no está disponible - esto es comportamiento esperado
  */
 export async function getCurrentLocation(): Promise<LocationType | null> {
     try {
         const hasPermission = await requestLocationPermission();
 
         if (!hasPermission) {
-            console.log('Location permission not granted');
+            console.log('Location permission not granted - continuing without location');
             return null;
         }
 
@@ -30,7 +31,7 @@ export async function getCurrentLocation(): Promise<LocationType | null> {
             accuracy: Location.Accuracy.Balanced,
         });
 
-        // Optional: Get address from coordinates
+        // Opcional: Obtener dirección desde coordenadas
         let address: string | undefined;
         try {
             const [reverseGeocode] = await Location.reverseGeocodeAsync({
@@ -57,7 +58,10 @@ export async function getCurrentLocation(): Promise<LocationType | null> {
             longitude: location.coords.longitude,
         };
     } catch (error) {
-        console.error('Error getting location:', error);
+        // La ubicación es opcional, solo registramos y retornamos null
+        // Esto previene mensajes de error cuando los servicios de ubicación están deshabilitados
+        console.log('Location not available - task will be created without location');
         return null;
     }
 }
+

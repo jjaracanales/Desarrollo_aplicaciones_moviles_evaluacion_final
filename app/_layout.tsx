@@ -1,7 +1,9 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { UserProvider, useUser } from '../context/UserContext';
+import { ApiNotificationProvider } from '../context/ApiNotificationContext';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import BackendStatusBadge from '../components/BackendStatusBadge';
 
 function RootLayoutNav() {
   const { isAuthenticated, isLoading } = useUser();
@@ -14,10 +16,10 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === '(tabs)';
 
     if (!isAuthenticated && inAuthGroup) {
-      // User is not authenticated but trying to access protected routes
+      // Usuario no autenticado intentando acceder a rutas protegidas
       router.replace('/login');
     } else if (isAuthenticated && !inAuthGroup) {
-      // User is authenticated but on login/index screen
+      // Usuario autenticado en pantalla login/index
       router.replace('/(tabs)');
     }
   }, [isAuthenticated, segments, isLoading]);
@@ -31,18 +33,23 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      <BackendStatusBadge />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
   );
 }
 
 export default function RootLayout() {
   return (
     <UserProvider>
-      <RootLayoutNav />
+      <ApiNotificationProvider>
+        <RootLayoutNav />
+      </ApiNotificationProvider>
     </UserProvider>
   );
 }

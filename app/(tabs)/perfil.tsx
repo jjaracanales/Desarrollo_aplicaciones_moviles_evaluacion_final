@@ -65,7 +65,6 @@ export default function PerfilTab() {
         <Text style={styles.footerTitle}>Evaluación 3 - Aplicaciones Móviles</Text>
         <View style={styles.teamContainer}>
           <Text style={styles.teamTitle}>Integrantes del equipo:</Text>
-          <Text style={styles.teamMember}>• Francisco Alejandro Bernal Araya</Text>
           <Text style={styles.teamMember}>• José Antonio Jara Canales</Text>
           <Text style={styles.teamMember}>• Raúl Veloso Ortiz</Text>
           <Text style={styles.teamMember}>• Adolfo Campos Gómez</Text>
