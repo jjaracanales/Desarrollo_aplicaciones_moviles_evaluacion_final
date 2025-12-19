@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,81 +11,52 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useUser } from '../../context/UserContext';
-import { useApiNotification } from '../../context/ApiNotificationContext';
-import { Task, apiTaskToTask } from '../../types/Task';
-import { getTasks as getTasksFromApi, deleteTask as deleteTaskFromApi, toggleTaskCompletion as toggleTaskInApi, createTask, updateTask as updateTaskInApi, CreateTaskPayload, UpdateTaskPayload } from '../../services/apiService';
+import { useTodos, Filter } from '../../hooks/useTodos';
+import { Task } from '../../types/Task';
+import { CreateTaskPayload, UpdateTaskPayload } from '../../services/apiService';
 import TaskItem from '../../components/TaskItem';
 import TaskForm from '../../components/TaskForm';
 import EmptyState from '../../components/EmptyState';
 
-type Filter = 'all' | 'pending' | 'completed';
-
 export default function HomeTab() {
   const { email } = useUser();
-  const { showNotification } = useApiNotification();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<Filter>('all');
+
+  // ✨ Uso del Custom Hook useTodos - Encapsula toda la lógica de negocio
+  const {
+    filteredTasks,
+    filter,
+    setFilter,
+    isLoading,
+    isRefreshing,
+    error,
+    totalTasks,
+    completedTasks,
+    pendingTasks,
+    createTask,
+    updateTask,
+    deleteTask,
+    toggleCompletion,
+    refreshTasks,
+  } = useTodos();
+
+  // Estados del formulario (solo UI, no lógica de negocio)
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Cargar tareas desde la API
-  const loadTasks = useCallback(async () => {
-    try {
-      const apiTasks = await getTasksFromApi();
-      const convertedTasks = apiTasks.map(apiTaskToTask);
-      setTasks(convertedTasks);
-    } catch (error: any) {
-      console.error('Error loading tasks:', error);
-      Alert.alert('Error', error.message || 'No se pudieron cargar las tareas');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Aplicar filtro
-  useEffect(() => {
-    let filtered = tasks;
-    if (filter === 'pending') {
-      filtered = tasks.filter(task => !task.completed);
-    } else if (filter === 'completed') {
-      filtered = tasks.filter(task => task.completed);
-    }
-    setFilteredTasks(filtered);
-  }, [tasks, filter]);
-
-  // Carga inicial
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
-
-  // Manejar pull to refresh
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await loadTasks();
-    setIsRefreshing(false);
-  };
 
   // Manejar guardar/actualizar tarea
   const handleSaveTask = async (taskData: CreateTaskPayload | UpdateTaskPayload, taskId?: string) => {
     try {
       if (editingTask && taskId) {
-        // Actualizar tarea existente
-        await updateTaskInApi(taskId, taskData as UpdateTaskPayload);
+        // Actualizar tarea existente usando el hook
+        await updateTask(taskId, taskData as UpdateTaskPayload);
         setEditingTask(null);
       } else {
-        // Agregar nueva tarea
+        // Agregar nueva tarea usando el hook
         await createTask(taskData as CreateTaskPayload);
-        showNotification('✓ Tarea creada', 'success');
       }
-
-      await loadTasks();
       setIsFormVisible(false);
     } catch (error: any) {
       console.error('[index.tsx] Error saving task:', error);
-      console.error('[index.tsx] Error stack:', error.stack);
       Alert.alert('Error', error.message || 'No se pudo guardar la tarea');
     }
   };
@@ -96,49 +67,36 @@ export default function HomeTab() {
     setIsFormVisible(true);
   };
 
-  // Manejar eliminación de tarea
+  // Manejar eliminación de tarea con confirmación
   const handleDeleteTask = async (taskId: string) => {
-    try {
-      Alert.alert(
-        'Eliminar tarea',
-        '¿Estás seguro de que deseas eliminar esta tarea?',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Eliminar',
-            style: 'destructive',
-            onPress: async () => {
-              await deleteTaskFromApi(taskId);
-              showNotification('✓ Tarea eliminada', 'success');
-              await loadTasks();
-            },
+    Alert.alert(
+      'Eliminar tarea',
+      '¿Estás seguro de que deseas eliminar esta tarea?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteTask(taskId);
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'No se pudo eliminar la tarea');
+            }
           },
-        ]
-      );
-    } catch (error: any) {
-      console.error('Error deleting task:', error);
-      Alert.alert('Error', error.message || 'No se pudo eliminar la tarea');
-    }
+        },
+      ]
+    );
   };
 
   // Manejar cambio de estado de tarea
   const handleToggleCompletion = async (taskId: string) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      await toggleTaskInApi(taskId, !task.completed);
-      await loadTasks();
+      await toggleCompletion(taskId);
     } catch (error: any) {
-      console.error('Error toggling task:', error);
       Alert.alert('Error', error.message || 'No se pudo actualizar la tarea');
     }
   };
-
-  // Estadísticas
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.completed).length;
-  const pendingTasks = totalTasks - completedTasks;
 
   const renderFilterButton = (filterType: Filter, label: string, icon: string) => {
     const isActive = filter === filterType;
@@ -229,7 +187,7 @@ export default function HomeTab() {
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={handleRefresh}
+              onRefresh={refreshTasks}
               tintColor="#10B981"
               colors={['#10B981']}
             />

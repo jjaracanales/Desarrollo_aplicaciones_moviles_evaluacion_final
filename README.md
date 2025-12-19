@@ -147,8 +147,10 @@ TodoList/
 │   └── EmptyState.tsx       # Estado vacío
 ├── context/                 # Contextos de React
 │   └── UserContext.tsx      # Auth + token management
+├── hooks/                   # Custom Hooks (NUEVO)
+│   └── useTodos.ts          # Hook para lógica del Todo List
 ├── services/                # Capa de servicios
-│   ├── apiService.ts        # API REST + Auth (NUEVO)
+│   ├── apiService.ts        # API REST + Auth
 │   ├── storageService.ts    # (Deprecado - solo token ahora)
 │   ├── fileService.ts       # Conversión base64
 │   └── locationService.ts   # Servicios de ubicación
@@ -317,18 +319,48 @@ La aplicación presenta:
 - [x] **Token persistente** en AsyncStorage
 - [x] **Rutas protegidas** con verificación de autenticación
 - [x] **CRUD 100% en backend** (GET, POST, PATCH, DELETE)
-- [x] **Manejo de imágenes** (conversión base64 + envío al servidor)
+- [x] **Manejo de imágenes** (multipart/form-data + POST /images)
 - [x] **Variables de entorno** (.env con API_URL)
 - [x] **Manejo de errores HTTP** (401, 400, 500)
 - [x] **Tareas asociadas al usuario** (mediante token)
-- [x] **Arquitectura limpia** (servicios API separados)
+- [x] **APIs nativas** (expo-image-picker, expo-location)
+- [x] **Custom Hooks** (`useTodos` para lógica del Todo List)
+- [x] **Arquitectura limpia** (servicios, hooks, componentes)
 - [x] **TypeScript** en todo el proyecto
 - [x] **Documentación completa** (README actualizado)
+
+### 🧩 Custom Hook `useTodos`
+
+La lógica del Todo List está encapsulada en el custom hook `useTodos`:
+
+```typescript
+// hooks/useTodos.ts
+const {
+  // Estados
+  tasks, filteredTasks, filter, isLoading, isRefreshing, error,
+  
+  // Estadísticas
+  totalTasks, completedTasks, pendingTasks,
+  
+  // Acciones
+  loadTasks, createTask, updateTask, deleteTask,
+  toggleCompletion, setFilter, refreshTasks,
+} = useTodos();
+```
+
+Este hook encapsula:
+- ✅ Obtener tareas del backend
+- ✅ Crear, actualizar y eliminar tareas
+- ✅ Cambiar estado de completado
+- ✅ Manejo de `loading` y `error`
+- ✅ Filtrado de tareas
+- ✅ Estadísticas calculadas
 
 ### Cambios vs Evaluación 2
 - ❌ ~~Persistencia local de tareas~~ → ✅ **Backend REST API**
 - ❌ ~~Usuarios predefinidos~~ → ✅ **Autenticación real con JWT**
 - ❌ ~~AsyncStorage para tareas~~ → ✅ **Solo token, tareas en servidor**
+- ❌ ~~Lógica en vistas~~ → ✅ **Custom Hook useTodos**
 - ✅ **Mismas funcionalidades** (foto, ubicación, CRUD, filtros)
 
 ---
