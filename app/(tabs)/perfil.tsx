@@ -62,7 +62,7 @@ export default function PerfilTab() {
       {/* Footer */}
       <View style={styles.footer}>
         <View style={styles.footerDivider} />
-        <Text style={styles.footerTitle}>Evaluación 3 - Aplicaciones Móviles</Text>
+        <Text style={styles.footerTitle}>Evaluación Final - Aplicaciones Móviles</Text>
         <View style={styles.teamContainer}>
           <Text style={styles.teamTitle}>Integrantes del equipo:</Text>
           <Text style={styles.teamMember}>• José Antonio Jara Canales</Text>
