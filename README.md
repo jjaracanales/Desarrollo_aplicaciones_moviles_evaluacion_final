@@ -1,6 +1,6 @@
 # 📱 TODO List - Aplicación Móvil con Backend
 
-**Evaluación 3 - Desarrollo de Aplicaciones Móviles**  
+**Evaluación Final - Desarrollo de Aplicaciones Móviles**  
 Instituto Profesional San Sebastián
 
 ## 👥 Integrantes del Equipo
@@ -12,7 +12,7 @@ Instituto Profesional San Sebastián
 
 ---
 
-## 🆕 Cambios Evaluación 3 (Backend Integration)
+## 🆕 Cambios Evaluación Final (Backend Integration)
 
 ### 🔐 Autenticación con Backend
 - **Login/Registro** conectado a API REST
@@ -147,7 +147,7 @@ TodoList/
 │   └── EmptyState.tsx       # Estado vacío
 ├── context/                 # Contextos de React
 │   └── UserContext.tsx      # Auth + token management
-├── hooks/                   # Custom Hooks (NUEVO)
+├── hooks/                   # Custom Hooks (NUEVO-Integracion Ev. Final)
 │   └── useTodos.ts          # Hook para lógica del Todo List
 ├── services/                # Capa de servicios
 │   ├── apiService.ts        # API REST + Auth
@@ -310,24 +310,7 @@ La aplicación presenta:
 11. ✅ Manejo de errores HTTP (401, 400, 500)
 12. ✅ Cierre de sesión y limpieza de token
 
-
 ---
-
-## 🏆 Evaluación 3 - Criterios Cumplidos
-
-- [x] **Autenticación contra backend** (login/registro)
-- [x] **Token persistente** en AsyncStorage
-- [x] **Rutas protegidas** con verificación de autenticación
-- [x] **CRUD 100% en backend** (GET, POST, PATCH, DELETE)
-- [x] **Manejo de imágenes** (multipart/form-data + POST /images)
-- [x] **Variables de entorno** (.env con API_URL)
-- [x] **Manejo de errores HTTP** (401, 400, 500)
-- [x] **Tareas asociadas al usuario** (mediante token)
-- [x] **APIs nativas** (expo-image-picker, expo-location)
-- [x] **Custom Hooks** (`useTodos` para lógica del Todo List)
-- [x] **Arquitectura limpia** (servicios, hooks, componentes)
-- [x] **TypeScript** en todo el proyecto
-- [x] **Documentación completa** (README actualizado)
 
 ### 🧩 Custom Hook `useTodos`
 
@@ -355,13 +338,6 @@ Este hook encapsula:
 - ✅ Manejo de `loading` y `error`
 - ✅ Filtrado de tareas
 - ✅ Estadísticas calculadas
-
-### Cambios vs Evaluación 2
-- ❌ ~~Persistencia local de tareas~~ → ✅ **Backend REST API**
-- ❌ ~~Usuarios predefinidos~~ → ✅ **Autenticación real con JWT**
-- ❌ ~~AsyncStorage para tareas~~ → ✅ **Solo token, tareas en servidor**
-- ❌ ~~Lógica en vistas~~ → ✅ **Custom Hook useTodos**
-- ✅ **Mismas funcionalidades** (foto, ubicación, CRUD, filtros)
 
 ---
 
